@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { BookPlus, Trash2, Send, Undo2, Edit2 } from 'lucide-react';
+import { BookPlus, Trash2, Send, Undo2, Edit2, Wand2, Loader2 } from 'lucide-react';
 import { getUserBooks, addBook, deleteBook, editBook, lendBook, returnBook, getAllUsers } from '../services/db';
 import { BOOK_GENRES } from '../utils/constants';
 
@@ -16,6 +16,7 @@ export default function MyBooks() {
   const [editingBook, setEditingBook] = useState(null);
   const [lendingBookId, setLendingBookId] = useState(null);
   const [borrowerNameInput, setBorrowerNameInput] = useState('');
+  const [isFetchingCover, setIsFetchingCover] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -30,8 +31,8 @@ export default function MyBooks() {
         const fetchedUsers = await getAllUsers();
         // Remove self from the lending list
         setMockUsers(fetchedUsers.filter(u => u.uid !== currentUser.uid));
-      } catch (err) {
-        console.error("Error loading data", err);
+      } catch (error) {
+        console.error("Error fetching user books:", error);
       } finally {
         clearTimeout(timeoutId);
         setLoading(false);
@@ -39,6 +40,35 @@ export default function MyBooks() {
     }
     loadData();
   }, [currentUser]);
+
+  const fetchCoverImage = async (bookData, setBookDataFn) => {
+    if (!bookData.title) {
+      alert("אנא הזן את שם הספר תחילה.");
+      return;
+    }
+    
+    setIsFetchingCover(true);
+    try {
+      let query = `intitle:${bookData.title}`;
+      if (bookData.author) query += `+inauthor:${bookData.author}`;
+      
+      const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=1`);
+      const data = await response.json();
+      
+      if (data.items && data.items.length > 0 && data.items[0].volumeInfo.imageLinks) {
+        let imageUrl = data.items[0].volumeInfo.imageLinks.thumbnail;
+        imageUrl = imageUrl.replace('http:', 'https:');
+        setBookDataFn({ ...bookData, coverImage: imageUrl });
+      } else {
+        alert("לא מצאנו תמונה מתאימה לספר הזה 😔. תוכל להוסיף קישור ידנית.");
+      }
+    } catch (err) {
+      console.error("Error fetching cover", err);
+      alert("אירעה שגיאה בחיפוש התמונה.");
+    } finally {
+      setIsFetchingCover(false);
+    }
+  };
 
   if (!currentUser) return <div className="text-center mt-8 glass-card"><h3>אנא התחברו כדי לצפות בספרים שלכם.</h3></div>;
 
@@ -166,8 +196,27 @@ export default function MyBooks() {
               </select>
             </div>
             <div className="input-group">
-              <label className="input-label">קישור לתמונה (אופציונלי)</label>
-              <input type="url" className="input-field" value={newBook.coverImage} onChange={e => setNewBook({...newBook, coverImage: e.target.value})} placeholder="https://..." />
+              <label className="input-label">קישור לתמונה (לא חובה)</label>
+              <div className="flex gap-2">
+                <input 
+                  type="url" 
+                  className="input-field" 
+                  placeholder="https://..."
+                  value={newBook.coverImage}
+                  onChange={(e) => setNewBook({...newBook, coverImage: e.target.value})}
+                  style={{ flex: 1 }}
+                />
+                <button 
+                  type="button" 
+                  className="btn btn-secondary hover-lift" 
+                  onClick={() => fetchCoverImage(newBook, setNewBook)}
+                  disabled={isFetchingCover}
+                  style={{ padding: '0.5rem', minWidth: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  title="מצא עטיפה אוטומטית לפי השם"
+                >
+                  {isFetchingCover ? <Loader2 size={20} className="animate-spin" /> : <Wand2 size={20} style={{ color: 'var(--primary-color)' }} />}
+                </button>
+              </div>
             </div>
             <div className="mt-4 flex justify-between">
               <button type="submit" className="btn btn-primary w-full">הוסף למאגר</button>
@@ -272,7 +321,25 @@ export default function MyBooks() {
               </div>
               <div className="input-group">
                 <label className="input-label">קישור לתמונה</label>
-                <input type="url" className="input-field" value={editingBook.coverImage} onChange={e => setEditingBook({...editingBook, coverImage: e.target.value})} />
+                <div className="flex gap-2">
+                  <input 
+                    type="url" 
+                    className="input-field" 
+                    value={editingBook.coverImage} 
+                    onChange={e => setEditingBook({...editingBook, coverImage: e.target.value})} 
+                    style={{ flex: 1 }}
+                  />
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary hover-lift" 
+                    onClick={() => fetchCoverImage(editingBook, setEditingBook)}
+                    disabled={isFetchingCover}
+                    style={{ padding: '0.5rem', minWidth: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    title="מצא עטיפה אוטומטית לפי השם"
+                  >
+                    {isFetchingCover ? <Loader2 size={20} className="animate-spin" /> : <Wand2 size={20} style={{ color: 'var(--primary-color)' }} />}
+                  </button>
+                </div>
               </div>
               <div className="flex gap-4 mt-6">
                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>שמור שינויים</button>
