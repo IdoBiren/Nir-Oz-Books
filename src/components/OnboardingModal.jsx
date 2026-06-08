@@ -5,8 +5,12 @@ import { Phone, User } from 'lucide-react';
 export default function OnboardingModal() {
   const { userProfile, completeProfile } = useAuth();
   
-  // Initialize with the Google name if available
-  const [displayName, setDisplayName] = useState(userProfile?.displayName || '');
+  // Helper to check if name contains Hebrew
+  const hasHebrew = (str) => /[\u0590-\u05FF]/.test(str || '');
+  
+  // Initialize with the Google name ONLY if it contains Hebrew
+  const initialName = hasHebrew(userProfile?.displayName) ? userProfile.displayName : '';
+  const [displayName, setDisplayName] = useState(initialName);
   const [phone, setPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
