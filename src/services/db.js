@@ -64,6 +64,18 @@ export async function getAvailableBooks() {
   return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
+export async function searchBookByIsbn(isbn) {
+  if (!hasFirebaseConfig) {
+    return mockBooks.find(b => b.isbn === isbn) || null;
+  }
+  const q = query(collection(db, 'books'), where('isbn', '==', isbn));
+  const snapshot = await getDocs(q);
+  if (!snapshot.empty) {
+    return snapshot.docs[0].data();
+  }
+  return null;
+}
+
 export async function addBook(bookData, userProfile) {
   const newBook = {
     ...bookData,

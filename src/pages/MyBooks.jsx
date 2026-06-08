@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { BookPlus, Trash2, Send, Undo2, Edit2, Camera, Loader2, ScanBarcode } from 'lucide-react';
-import { getUserBooks, addBook, deleteBook, editBook, lendBook, returnBook, getAllUsers, uploadBookCover } from '../services/db';
+import { getUserBooks, addBook, deleteBook, editBook, lendBook, returnBook, getAllUsers, uploadBookCover, searchBookByIsbn } from '../services/db';
 import BarcodeScanner from '../components/BarcodeScanner';
 import { BOOK_GENRES } from '../utils/constants';
 
@@ -13,7 +13,7 @@ export default function MyBooks() {
   const [mockUsers, setMockUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [newBook, setNewBook] = useState({ title: '', author: '', genre: '', coverImage: '' });
+  const [newBook, setNewBook] = useState({ title: '', author: '', genre: '', coverImage: '', isbn: '' });
   const [editingBook, setEditingBook] = useState(null);
   const [lendingBookId, setLendingBookId] = useState(null);
   const [borrowerNameInput, setBorrowerNameInput] = useState('');
@@ -58,22 +58,33 @@ export default function MyBooks() {
       let coverImage = '';
       let found = false;
 
-      // 1. ננסה דרך גוגל תחילה
-      const googleResponse = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`);
-      if (googleResponse.status !== 429) {
-        const googleData = await googleResponse.json();
-        if (googleData.items && googleData.items.length > 0) {
-          const bookInfo = googleData.items[0].volumeInfo;
-          title = bookInfo.title || '';
-          author = bookInfo.authors ? bookInfo.authors.join(', ') : '';
-          if (bookInfo.imageLinks && bookInfo.imageLinks.thumbnail) {
-            coverImage = bookInfo.imageLinks.thumbnail.replace('http:', 'https:');
+      // 1. חיפוש קודם כל במאגר הקהילתי של ניר עוז (חוכמת ההמונים)
+      const localBook = await searchBookByIsbn(cleanIsbn);
+      if (localBook) {
+        title = localBook.title || '';
+        author = localBook.author || '';
+        coverImage = localBook.coverImage || '';
+        found = true;
+      }
+
+      // 2. ננסה דרך גוגל אם לא נמצא בקהילה
+      if (!found) {
+        const googleResponse = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`);
+        if (googleResponse.status !== 429) {
+          const googleData = await googleResponse.json();
+          if (googleData.items && googleData.items.length > 0) {
+            const bookInfo = googleData.items[0].volumeInfo;
+            title = bookInfo.title || '';
+            author = bookInfo.authors ? bookInfo.authors.join(', ') : '';
+            if (bookInfo.imageLinks && bookInfo.imageLinks.thumbnail) {
+              coverImage = bookInfo.imageLinks.thumbnail.replace('http:', 'https:');
+            }
+            found = true;
           }
-          found = true;
         }
       }
 
-      // 2. אם גוגל נכשל או החזיר 429, ננסה דרך OpenLibrary
+      // 3. אם גוגל נכשל או החזיר 429, ננסה דרך OpenLibrary
       if (!found) {
         const openLibResponse = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`);
         const openLibData = await openLibResponse.json();
@@ -87,16 +98,19 @@ export default function MyBooks() {
         }
       }
 
+      // בכל מקרה שומרים את ה-ISBN כדי להגדיל את מאגר הקהילה!
+      setNewBook({
+        ...newBook,
+        isbn: cleanIsbn,
+        title: found ? title : newBook.title,
+        author: found ? author : newBook.author,
+        coverImage: (found && coverImage) ? coverImage : newBook.coverImage
+      });
+
       if (found) {
-        setNewBook({
-          ...newBook,
-          title: title,
-          author: author,
-          coverImage: coverImage || newBook.coverImage
-        });
         alert(`נמצא: ${title} מאת ${author || 'לא ידוע'}`);
       } else {
-        alert("הברקוד נסרק בהצלחה, אך הספר אינו קיים במאגר. אנא הקלד ידנית.");
+        alert("הברקוד נקלט! אבל הספר עוד לא קיים במאגר. ברגע שתקליד אותו ידנית, תשמור אותו גם עבור הבאים אחריך! ✨");
       }
     } catch (err) {
       console.error("Error fetching ISBN data:", err);
@@ -109,20 +123,37 @@ export default function MyBooks() {
   const handleAddBook = async (e) => {
     e.preventDefault();
     if (!newBook.title || !newBook.author || !newBook.genre) return;
+    setIsUploading(true);
     try {
-      const addedBook = await addBook({
+      let finalCover = newBook.coverImage || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=300&h=400';
+      
+      const bookToAdd = {
         title: newBook.title,
         author: newBook.author,
         genre: newBook.genre,
-        coverImage: newBook.coverImage || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=300&h=400'
-      }, userProfile);
+        isbn: newBook.isbn,
+        coverImage: finalCover
+      };
+
+      const addedBook = await addBook(bookToAdd, currentUser);
       
+      if (newCoverFile) {
+        const downloadUrl = await uploadBookCover(newCoverFile, addedBook.id);
+        if (downloadUrl) {
+          await editBook(addedBook.id, { ...bookToAdd, coverImage: downloadUrl });
+          addedBook.coverImage = downloadUrl;
+        }
+      }
+
       setBooks([...books, addedBook]);
-      setNewBook({ title: '', author: '', genre: '', coverImage: '' });
+      setNewBook({ title: '', author: '', genre: '', coverImage: '', isbn: '' });
       setShowAddForm(false);
+      setNewCoverFile(null);
     } catch (err) {
       console.error("Error adding book", err);
       alert('אירעה שגיאה בהוספת הספר.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
