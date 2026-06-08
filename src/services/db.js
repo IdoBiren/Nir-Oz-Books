@@ -1,0 +1,116 @@
+import { db, hasFirebaseConfig } from '../firebase';
+import { collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
+
+// In-memory mock DB for demo mode
+let mockBooks = [
+  { id: '1', title: 'קיצור תולדות האנושות', author: 'יובל נח הררי', genre: 'היסטוריה / מדע', coverImage: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300&h=400', status: 'available', ownerId: 'demo-user-123', ownerName: 'אורח (Demo)' },
+  { id: '2', title: 'הארי פוטר ואבן החכמים', author: 'ג׳יי. קיי. רולינג', genre: 'פנטזיה', coverImage: 'https://images.unsplash.com/photo-1626618012641-bfbca5a31239?auto=format&fit=crop&q=80&w=300&h=400', status: 'borrowed', borrowerName: 'דנה ישראלי', dueDate: '14.06.2026', ownerId: 'demo-user-123', ownerName: 'אורח (Demo)' }
+];
+
+const mockUsers = [
+  { uid: 'u1', displayName: 'דנה ישראלי' },
+  { uid: 'u2', displayName: 'אורי כהן' },
+  { uid: 'u3', displayName: 'יעל לוי' },
+  { uid: 'u4', displayName: 'עידו שפירא' },
+  { uid: 'u5', displayName: 'שירה אלון' }
+];
+
+export async function getAllUsers() {
+  if (!hasFirebaseConfig) return mockUsers;
+  const q = query(collection(db, 'users'));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(d => d.data());
+}
+
+export async function getUserProfile(uid) {
+  if (!hasFirebaseConfig) return mockUsers.find(u => u.uid === uid) || null;
+  const docRef = doc(db, 'users', uid);
+  const snap = await getDoc(docRef);
+  return snap.exists() ? snap.data() : null;
+}
+
+export async function updateUserProfile(uid, data) {
+  if (!hasFirebaseConfig) return;
+  const userRef = doc(db, 'users', uid);
+  await updateDoc(userRef, data);
+}
+
+export async function saveUserToDb(user) {
+  if (!hasFirebaseConfig) return;
+  const userRef = doc(db, 'users', user.uid);
+  await setDoc(userRef, {
+    uid: user.uid,
+    displayName: user.displayName,
+    email: user.email,
+    photoURL: user.photoURL,
+    lastLogin: serverTimestamp()
+  }, { merge: true });
+}
+
+export async function getUserBooks(userId) {
+  if (!hasFirebaseConfig) return mockBooks.filter(b => b.ownerId === userId);
+  
+  const q = query(collection(db, 'books'), where('ownerId', '==', userId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+export async function getAvailableBooks() {
+  if (!hasFirebaseConfig) return mockBooks.filter(b => b.status === 'available');
+
+  const q = query(collection(db, 'books'), where('status', '==', 'available'));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+export async function addBook(bookData, userProfile) {
+  const newBook = {
+    ...bookData,
+    ownerId: userProfile.uid,
+    ownerName: userProfile.displayName,
+    ownerPhone: userProfile.phone || '',
+    status: 'available',
+    createdAt: hasFirebaseConfig ? serverTimestamp() : new Date()
+  };
+
+  if (!hasFirebaseConfig) {
+    newBook.id = Date.now().toString();
+    mockBooks.push(newBook);
+    return newBook;
+  }
+
+  const docRef = await addDoc(collection(db, 'books'), newBook);
+  return { id: docRef.id, ...newBook };
+}
+
+export async function deleteBook(bookId) {
+  if (!hasFirebaseConfig) {
+    mockBooks = mockBooks.filter(b => b.id !== bookId);
+    return;
+  }
+  await deleteDoc(doc(db, 'books', bookId));
+}
+
+export async function lendBook(bookId, borrowerName, dueDateStr) {
+  if (!hasFirebaseConfig) {
+    mockBooks = mockBooks.map(b => b.id === bookId ? { ...b, status: 'borrowed', borrowerName, dueDate: dueDateStr } : b);
+    return;
+  }
+  await updateDoc(doc(db, 'books', bookId), {
+    status: 'borrowed',
+    borrowerName,
+    dueDate: dueDateStr
+  });
+}
+
+export async function returnBook(bookId) {
+  if (!hasFirebaseConfig) {
+    mockBooks = mockBooks.map(b => b.id === bookId ? { ...b, status: 'available', borrowerName: null, dueDate: null } : b);
+    return;
+  }
+  await updateDoc(doc(db, 'books', bookId), {
+    status: 'available',
+    borrowerName: null,
+    dueDate: null
+  });
+}

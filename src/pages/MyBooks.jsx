@@ -1,0 +1,246 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { BookPlus, Trash2, Send, Undo2 } from 'lucide-react';
+import { getUserBooks, addBook, deleteBook, lendBook, returnBook, getAllUsers } from '../services/db';
+
+export default function MyBooks() {
+  const { currentUser, userProfile } = useAuth();
+  const [showAddForm, setShowAddForm] = useState(false);
+  
+  const [books, setBooks] = useState([]);
+  const [mockUsers, setMockUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const [newBook, setNewBook] = useState({ title: '', author: '', genre: '', coverImage: '' });
+  const [lendingBookId, setLendingBookId] = useState(null);
+  const [borrowerNameInput, setBorrowerNameInput] = useState('');
+
+  useEffect(() => {
+    async function loadData() {
+      if (!currentUser) return;
+      setLoading(true);
+      
+      const timeoutId = setTimeout(() => setLoading(false), 3000);
+      
+      try {
+        const fetchedBooks = await getUserBooks(currentUser.uid);
+        setBooks(fetchedBooks);
+        const fetchedUsers = await getAllUsers();
+        // Remove self from the lending list
+        setMockUsers(fetchedUsers.filter(u => u.uid !== currentUser.uid));
+      } catch (err) {
+        console.error("Error loading data", err);
+      } finally {
+        clearTimeout(timeoutId);
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, [currentUser]);
+
+  if (!currentUser) return <div className="text-center mt-8 glass-card"><h3>אנא התחברו כדי לצפות בספרים שלכם.</h3></div>;
+
+  const handleAddBook = async (e) => {
+    e.preventDefault();
+    if (!newBook.title || !newBook.author || !newBook.genre) return;
+    
+    try {
+      const addedBook = await addBook({
+        title: newBook.title,
+        author: newBook.author,
+        genre: newBook.genre,
+        coverImage: newBook.coverImage || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=300&h=400'
+      }, userProfile);
+      
+      setBooks([...books, addedBook]);
+      setNewBook({ title: '', author: '', genre: '', coverImage: '' });
+      setShowAddForm(false);
+    } catch (err) {
+      console.error("Error adding book", err);
+      alert('אירעה שגיאה בהוספת הספר.');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteBook(id);
+      setBooks(books.filter(b => b.id !== id));
+    } catch (err) {
+      console.error("Error deleting book", err);
+      alert('אירעה שגיאה במחיקת הספר.');
+    }
+  };
+
+  const handleLendBook = async (id) => {
+    if (!borrowerNameInput.trim()) return;
+    const date = new Date();
+    date.setMonth(date.getMonth() + 2);
+    const dueDateStr = date.toLocaleDateString('he-IL');
+    
+    try {
+      await lendBook(id, borrowerNameInput, dueDateStr);
+      setBooks(books.map(b => b.id === id ? {
+        ...b,
+        status: 'borrowed',
+        borrowerName: borrowerNameInput,
+        dueDate: dueDateStr
+      } : b));
+      setLendingBookId(null);
+      setBorrowerNameInput('');
+    } catch (err) {
+      console.error("Error lending book", err);
+      alert('אירעה שגיאה בסימון הספר כמושאל.');
+    }
+  };
+
+  const handleReturnBook = async (id) => {
+    try {
+      await returnBook(id);
+      setBooks(books.map(b => b.id === id ? {
+        ...b,
+        status: 'available',
+        borrowerName: null,
+        dueDate: null
+      } : b));
+    } catch (err) {
+      console.error("Error returning book", err);
+      alert('אירעה שגיאה בהחזרת הספר.');
+    }
+  };
+
+  const futureDateStr = new Date(new Date().setMonth(new Date().getMonth() + 2)).toLocaleDateString('he-IL');
+
+  return (
+    <div className="animate-fade-in">
+      <div className="flex items-center justify-between mb-8 flex-mobile-col">
+        <div>
+          <h1 className="mb-2">הספרים שלי</h1>
+          <p className="text-muted">ניהול הספרים שהעליתי לספרייה</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => setShowAddForm(!showAddForm)}>
+          <BookPlus size={20} />
+          {showAddForm ? 'ביטול' : 'הוסף ספר חדש'}
+        </button>
+      </div>
+
+      {showAddForm && (
+        <div className="glass-card mb-8 animate-fade-in hover-lift" style={{ maxWidth: '600px', margin: '0 auto 2rem' }}>
+          <h3 className="mb-4">הוספת ספר חדש</h3>
+          <form onSubmit={handleAddBook}>
+            <div className="input-group">
+              <label className="input-label">שם הספר</label>
+              <input type="text" className="input-field" value={newBook.title} onChange={e => setNewBook({...newBook, title: e.target.value})} placeholder="לדוגמה: שר הטבעות" required />
+            </div>
+            <div className="input-group">
+              <label className="input-label">שם המחבר</label>
+              <input type="text" className="input-field" value={newBook.author} onChange={e => setNewBook({...newBook, author: e.target.value})} placeholder="לדוגמה: ג'.ר.ר. טולקין" required />
+            </div>
+            <div className="input-group">
+              <label className="input-label">ז'אנר</label>
+              <input type="text" className="input-field" value={newBook.genre} onChange={e => setNewBook({...newBook, genre: e.target.value})} placeholder="לדוגמה: פנטזיה, היסטוריה, רומן" required />
+            </div>
+            <div className="input-group">
+              <label className="input-label">קישור לתמונה (אופציונלי)</label>
+              <input type="url" className="input-field" value={newBook.coverImage} onChange={e => setNewBook({...newBook, coverImage: e.target.value})} placeholder="https://..." />
+            </div>
+            <div className="mt-4 flex justify-between">
+              <button type="submit" className="btn btn-primary w-full">הוסף למאגר</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="text-center mt-8 glass-card">
+          <h3>טוען ספרים...</h3>
+        </div>
+      ) : (
+        <div className="grid grid-cols-4">
+          {books.length === 0 ? (
+            <div className="glass-card text-center" style={{ gridColumn: '1 / -1', padding: '4rem 2rem' }}>
+              <h3>אין לכם ספרים כרגע במאגר</h3>
+            </div>
+          ) : (
+            books.map(book => (
+              <div key={book.id} className="glass-card flex flex-col hover-lift" style={{ padding: '0', overflow: 'hidden' }}>
+                <div style={{ height: '240px', width: '100%', overflow: 'hidden' }}>
+                  <img src={book.coverImage} alt={book.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+                <div className="flex-col justify-between flex" style={{ padding: '1.5rem', flex: 1 }}>
+                  <div>
+                    <h4 style={{ marginBottom: '0.5rem' }}>{book.title}</h4>
+                    <p className="text-muted" style={{ fontSize: '1.1rem', marginBottom: '0.25rem', fontWeight: 'bold' }}>{book.author}</p>
+                    <p style={{ fontSize: '1.1rem', color: 'var(--primary-color)', fontWeight: '600' }}>{book.genre}</p>
+                  </div>
+                  <div className="mt-4 flex items-start justify-between" style={{ gap: '0.5rem' }}>
+                    <div className="flex flex-col items-start">
+                      <span style={{ 
+                        fontSize: '1rem', 
+                        padding: '0.25rem 0.5rem', 
+                        borderRadius: '1rem', 
+                        background: book.status === 'available' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                        color: book.status === 'available' ? 'var(--success-color)' : 'var(--danger-color)'
+                      }}>
+                        {book.status === 'available' ? 'זמין להשאלה' : 'מושאל'}
+                      </span>
+                      {book.status === 'borrowed' && book.borrowerName && (
+                        <div style={{ fontSize: '1.1rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: '1.4' }}>
+                          <span style={{display: 'block'}}>אצל: <strong>{book.borrowerName}</strong></span>
+                          <span style={{display: 'block'}}>החזרה: <strong>{book.dueDate}</strong></span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-col gap-2">
+                      {book.status === 'available' ? (
+                        <button onClick={() => setLendingBookId(book.id)} className="btn btn-primary" style={{ padding: '0.6rem', fontSize: '1rem', width: '100%', justifyContent: 'center' }} title="סמן כמושאל לחבר">
+                          <Send size={18} /> השאל
+                        </button>
+                      ) : (
+                        <button onClick={() => handleReturnBook(book.id)} className="btn btn-secondary" style={{ padding: '0.6rem', fontSize: '1rem', color: 'var(--success-color)', borderColor: 'var(--success-color)', width: '100%', justifyContent: 'center' }} title="סמן שהוחזר אלי">
+                          <Undo2 size={18} /> הוחזר
+                        </button>
+                      )}
+                      <button onClick={() => handleDelete(book.id)} className="btn btn-danger" style={{ padding: '0.6rem', fontSize: '1rem', width: '100%', justifyContent: 'center' }} title="מחק ספר מהמערכת">
+                        <Trash2 size={18} /> מחק
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Lending Modal */}
+      {lendingBookId && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          background: 'rgba(2, 6, 23, 0.6)', backdropFilter: 'blur(4px)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div className="glass-card animate-fade-in" style={{ background: '#fff', width: '90%', maxWidth: '450px', border: 'none' }}>
+            <h3 className="mb-4">למי השאלת את הספר?</h3>
+            <div className="input-group">
+               <label className="input-label">בחר חבר קהילה מהרשימה</label>
+               <select className="input-field" value={borrowerNameInput} onChange={e => setBorrowerNameInput(e.target.value)}>
+                 <option value="" disabled>בחר חבר...</option>
+                 {mockUsers.map(u => (
+                   <option key={u.uid || u.id} value={u.displayName || u.name}>{u.displayName || u.name}</option>
+                 ))}
+               </select>
+            </div>
+            <p className="text-muted" style={{ fontSize: '1.1rem', marginBottom: '1.5rem', background: '#f1f5f9', padding: '1rem', borderRadius: '8px' }}>
+              הספר יסומן כמושאל, ותאריך ההחזרה ייקבע אוטומטית לעוד חודשיים:<br/><strong style={{color: 'var(--text-main)', fontSize: '1.2rem'}}>{futureDateStr}</strong>.
+            </p>
+            <div className="flex gap-4">
+              <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => handleLendBook(lendingBookId)}>אישור השאלה</button>
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => { setLendingBookId(null); setBorrowerNameInput(''); }}>ביטול</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

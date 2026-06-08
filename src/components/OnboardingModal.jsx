@@ -1,0 +1,76 @@
+import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { Phone, User } from 'lucide-react';
+
+export default function OnboardingModal() {
+  const { userProfile, completeProfile } = useAuth();
+  
+  // Initialize with the Google name if available
+  const [displayName, setDisplayName] = useState(userProfile?.displayName || '');
+  const [phone, setPhone] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!displayName.trim() || !phone.trim()) return;
+    
+    setIsSubmitting(true);
+    try {
+      await completeProfile(displayName, phone);
+    } catch (err) {
+      console.error(err);
+      alert('אירעה שגיאה בשמירת הפרטים. אנא נסו שוב.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+      background: 'rgba(2, 6, 23, 0.8)', backdropFilter: 'blur(8px)', zIndex: 9999,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '1rem'
+    }}>
+      <div className="glass-card animate-fade-in" style={{ background: '#fff', width: '100%', maxWidth: '450px', border: 'none' }}>
+        <div className="text-center mb-6">
+          <h2 className="mb-2">ברוכים הבאים לקהילה! 👋</h2>
+          <p className="text-muted">כדי שנוכל להתחיל להשאיל ולהחליף ספרים, אנחנו צריכים להשלים שני פרטים קטנים.</p>
+        </div>
+        
+        <form onSubmit={handleSubmit}>
+          <div className="input-group">
+            <label className="input-label flex items-center gap-2"><User size={18} /> שם להצגה באפליקציה</label>
+            <input 
+              type="text" 
+              className="input-field" 
+              value={displayName} 
+              onChange={e => setDisplayName(e.target.value)} 
+              placeholder="איך תרצו שנקרא לכם?" 
+              required 
+              disabled={isSubmitting}
+            />
+          </div>
+          
+          <div className="input-group mt-4">
+             <label className="input-label flex items-center gap-2"><Phone size={18} /> מספר טלפון ליצירת קשר</label>
+             <p className="text-muted mb-2" style={{ fontSize: '0.9rem' }}>המספר יוצג לחברי קהילה שירצו להשאיל מכם ספר.</p>
+             <input 
+               type="tel" 
+               className="input-field" 
+               value={phone} 
+               onChange={e => setPhone(e.target.value)} 
+               placeholder="05X-XXXXXXX" 
+               required 
+               disabled={isSubmitting}
+             />
+          </div>
+          
+          <button type="submit" className="btn btn-primary mt-6 w-full" disabled={isSubmitting} style={{ justifyContent: 'center' }}>
+            {isSubmitting ? 'שומר פרטים...' : 'בואו נתחיל!'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
