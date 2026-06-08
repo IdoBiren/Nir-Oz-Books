@@ -64,27 +64,27 @@ export default function Home() {
         </div>
       )}
 
-      <div className="flex flex-col gap-4 mb-8">
-        <div className="glass-card flex flex-col md:flex-row gap-4" style={{ padding: '1.5rem', background: 'var(--surface-color)', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="glass-card flex flex-col md:flex-row gap-3" style={{ padding: '0.75rem 1rem', background: 'var(--surface-color)', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
           
-          <div className="input-group" style={{ flex: '1 1 300px', margin: 0 }}>
+          <div className="input-group" style={{ flex: '2 1 300px', margin: 0 }}>
             <div className="flex items-center gap-2" style={{ position: 'relative' }}>
-              <Search size={18} style={{ position: 'absolute', right: '12px', color: 'var(--text-muted)' }} />
+              <Search size={16} style={{ position: 'absolute', right: '12px', color: 'var(--text-muted)' }} />
               <input 
                 type="text" 
                 className="input-field" 
-                placeholder="חיפוש חופשי (שם ספר, סופר...)" 
+                placeholder="חיפוש חופשי..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ paddingRight: '2.5rem', marginBottom: 0 }}
+                style={{ paddingRight: '2.2rem', paddingTop: '0.5rem', paddingBottom: '0.5rem', marginBottom: 0, fontSize: '0.95rem' }}
               />
             </div>
           </div>
           
-          <div className="flex gap-4" style={{ flex: '1 1 300px', width: '100%' }}>
+          <div className="flex gap-3" style={{ flex: '1 1 200px', width: '100%' }}>
             <div className="input-group" style={{ flex: 1, margin: 0, position: 'relative' }}>
-              <Filter size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 1 }} />
-              <select className="input-field" value={selectedGenre} onChange={(e) => setSelectedGenre(e.target.value)} style={{ paddingRight: '2.5rem', marginBottom: 0, cursor: 'pointer' }}>
+              <Filter size={16} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 1 }} />
+              <select className="input-field" value={selectedGenre} onChange={(e) => setSelectedGenre(e.target.value)} style={{ paddingRight: '2.2rem', paddingTop: '0.5rem', paddingBottom: '0.5rem', marginBottom: 0, cursor: 'pointer', fontSize: '0.95rem' }}>
                 <option value="">כל הקטגוריות</option>
                 {BOOK_GENRES.map(genre => (
                   <option key={genre} value={genre}>{genre}</option>
@@ -93,12 +93,12 @@ export default function Home() {
             </div>
 
             <div className="input-group" style={{ flex: 1, margin: 0, position: 'relative' }}>
-              <ArrowUpDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 1 }} />
-              <select className="input-field" value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ paddingRight: '2.5rem', marginBottom: 0, cursor: 'pointer' }}>
+              <ArrowUpDown size={16} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 1 }} />
+              <select className="input-field" value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ paddingRight: '2.2rem', paddingTop: '0.5rem', paddingBottom: '0.5rem', marginBottom: 0, cursor: 'pointer', fontSize: '0.95rem' }}>
                 <option value="newest">הכי חדשים</option>
-                <option value="title-asc">שם הספר (א-ת)</option>
-                <option value="title-desc">שם הספר (ת-א)</option>
-                <option value="author-asc">שם הסופר (א-ת)</option>
+                <option value="title-asc">א-ת (ספר)</option>
+                <option value="title-desc">ת-א (ספר)</option>
+                <option value="author-asc">א-ת (סופר)</option>
               </select>
             </div>
           </div>
