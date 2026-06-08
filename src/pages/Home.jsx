@@ -149,7 +149,7 @@ export default function Home() {
                   <div className="mt-4 pt-4 flex justify-between items-center" style={{ borderTop: '1px solid var(--surface-border)' }}>
                     <p style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>שייך ל: <strong>{book.ownerName}</strong></p>
                     {book.ownerPhone && (
-                      <a href={`https://wa.me/${book.ownerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(`היי ${book.ownerName}! 👋 ראיתי את הספר "${book.title}" בספריית ניר עוז וממש אשמח להשאיל אותו אם אפשר. תודה מראש! 📚✨`)}`} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', gap: '0.4rem', background: '#25D366', borderColor: '#25D366' }} title="שלח וואטסאפ">
+                      <a href={`https://api.whatsapp.com/send?phone=${book.ownerPhone.replace(/\D/g, '').replace(/^0/, '972')}&text=${encodeURIComponent(`היי ${book.ownerName}! 👋 ראיתי את הספר "${book.title}" בספריית ניר עוז וממש אשמח להשאיל אותו אם אפשר. תודה מראש! 📚✨`)}`} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', gap: '0.4rem', background: '#25D366', borderColor: '#25D366' }} title="שלח וואטסאפ">
                         <MessageCircle size={16} /> בקש
                       </a>
                     )}
