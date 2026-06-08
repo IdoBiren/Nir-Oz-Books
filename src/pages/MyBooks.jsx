@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { BookPlus, Trash2, Send, Undo2 } from 'lucide-react';
 import { getUserBooks, addBook, deleteBook, lendBook, returnBook, getAllUsers } from '../services/db';
+import { BOOK_GENRES } from '../utils/constants';
 
 export default function MyBooks() {
   const { currentUser, userProfile } = useAuth();
@@ -136,8 +137,13 @@ export default function MyBooks() {
               <input type="text" className="input-field" value={newBook.author} onChange={e => setNewBook({...newBook, author: e.target.value})} placeholder="לדוגמה: ג'.ר.ר. טולקין" required />
             </div>
             <div className="input-group">
-              <label className="input-label">ז'אנר</label>
-              <input type="text" className="input-field" value={newBook.genre} onChange={e => setNewBook({...newBook, genre: e.target.value})} placeholder="לדוגמה: פנטזיה, היסטוריה, רומן" required />
+              <label className="input-label">ז'אנר / קטגוריה</label>
+              <select className="input-field" value={newBook.genre} onChange={e => setNewBook({...newBook, genre: e.target.value})} required>
+                <option value="" disabled>בחרו קטגוריה מתאימה</option>
+                {BOOK_GENRES.map(genre => (
+                  <option key={genre} value={genre}>{genre}</option>
+                ))}
+              </select>
             </div>
             <div className="input-group">
               <label className="input-label">קישור לתמונה (אופציונלי)</label>
