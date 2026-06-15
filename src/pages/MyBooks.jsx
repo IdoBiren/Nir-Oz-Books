@@ -196,7 +196,7 @@ export default function MyBooks() {
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    if (!editingBook.title || !editingBook.author || !editingBook.genre) return;
+    if (!editingBook.title || !editingBook.author) return;
     setIsUploading(true);
     
     try {
@@ -312,8 +312,8 @@ export default function MyBooks() {
               <input type="text" className="input-field" value={newBook.author} onChange={e => setNewBook({...newBook, author: e.target.value})} placeholder="לדוגמה: ג'.ר.ר. טולקין" required />
             </div>
             <div className="input-group">
-              <label className="input-label">ז'אנר / קטגוריה</label>
-              <select className="input-field" value={newBook.genre} onChange={e => setNewBook({...newBook, genre: e.target.value})} required>
+              <label className="input-label">ז'אנר / קטגוריה (לא חובה)</label>
+              <select className="input-field" value={newBook.genre} onChange={e => setNewBook({...newBook, genre: e.target.value})}>
                 <option value="" disabled>בחרו קטגוריה מתאימה</option>
                 {BOOK_GENRES.map(genre => (
                   <option key={genre} value={genre}>{genre}</option>
@@ -434,8 +434,8 @@ export default function MyBooks() {
                 <input type="text" className="input-field" value={editingBook.author} onChange={e => setEditingBook({...editingBook, author: e.target.value})} required />
               </div>
               <div className="input-group">
-                <label className="input-label">ז'אנר / קטגוריה</label>
-                <select className="input-field" value={editingBook.genre} onChange={e => setEditingBook({...editingBook, genre: e.target.value})} required>
+                <label className="input-label">ז'אנר / קטגוריה (לא חובה)</label>
+                <select className="input-field" value={editingBook.genre} onChange={e => setEditingBook({...editingBook, genre: e.target.value})}>
                   {BOOK_GENRES.map(genre => (
                     <option key={genre} value={genre}>{genre}</option>
                   ))}
