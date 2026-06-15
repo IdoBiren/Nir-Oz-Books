@@ -163,8 +163,34 @@ export default function Home() {
               <button className="btn btn-secondary mt-4" onClick={() => { setSearchQuery(''); setSelectedGenre(''); }}>נקה סינונים</button>
             </div>
           ) : (
-            filteredBooks.map(book => (
-              <div key={book.id} className="glass-card flex flex-col hover-lift" style={{ padding: '0', overflow: 'hidden' }}>
+            filteredBooks.map(book => {
+              const isMine = currentUser && book.ownerId === currentUser.uid;
+              return (
+              <div key={book.id} className="glass-card flex flex-col hover-lift" style={{ 
+                padding: '0', 
+                overflow: 'hidden', 
+                position: 'relative',
+                border: isMine ? '2px solid var(--primary-color)' : '',
+                boxShadow: isMine ? '0 8px 30px rgba(99, 102, 241, 0.2)' : ''
+              }}>
+                {isMine && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '12px',
+                    right: '12px',
+                    background: 'var(--primary-color)',
+                    color: 'white',
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    fontSize: '0.85rem',
+                    fontWeight: 'bold',
+                    zIndex: 10,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                    backdropFilter: 'blur(4px)'
+                  }}>
+                    הספר שלי
+                  </div>
+                )}
                 <div style={{ height: '240px', width: '100%', overflow: 'hidden' }}>
                   <img src={book.coverImage} alt={book.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
@@ -175,8 +201,10 @@ export default function Home() {
                     <p style={{ fontSize: '1.1rem', color: 'var(--primary-color)', fontWeight: '600' }}>{book.genre}</p>
                   </div>
                   <div className="mt-4 pt-4 flex justify-between items-center" style={{ borderTop: '1px solid var(--surface-border)' }}>
-                    <p style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>שייך ל: <strong>{book.ownerName}</strong></p>
-                    {book.ownerPhone && (
+                    <p style={{ fontSize: '1rem', color: isMine ? 'var(--primary-color)' : 'var(--text-muted)', fontWeight: isMine ? 'bold' : 'normal' }}>
+                      שייך ל: <strong>{isMine ? 'אני' : book.ownerName}</strong>
+                    </p>
+                    {!isMine && book.ownerPhone && (
                       <a href={`https://api.whatsapp.com/send?phone=${book.ownerPhone.replace(/\D/g, '').replace(/^0/, '972')}&text=${encodeURIComponent(`היי ${book.ownerName}! 👋 ראיתי את הספר "${book.title}" בספריית ניר עוז וממש אשמח להשאיל אותו אם אפשר. תודה מראש! 📚✨`)}`} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', gap: '0.4rem', background: '#25D366', borderColor: '#25D366' }} title="שלח וואטסאפ">
                         <MessageCircle size={16} /> בקש
                       </a>
