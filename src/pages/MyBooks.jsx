@@ -83,51 +83,6 @@ export default function MyBooks() {
         found = true;
       }
 
-      // 2. אם לא נמצא בקהילה, נחפש במקביל בגוגל וב-OpenLibrary כדי לחסוך זמן
-      if (!found) {
-        try {
-          // מריצים את הבקשות במקביל, ונותנים ל-OpenLibrary מקסימום 3 שניות כדי לא לעכב את המשתמש
-          const openLibPromise = Promise.race([
-            fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
-          ]);
-          
-          const [googleRes, openLibRes] = await Promise.allSettled([
-            fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`),
-            openLibPromise
-          ]);
-
-          // בודקים קודם את גוגל
-          if (googleRes.status === 'fulfilled' && googleRes.value.status !== 429) {
-            const googleData = await googleRes.value.json();
-            if (googleData.items && googleData.items.length > 0) {
-              const bookInfo = googleData.items[0].volumeInfo;
-              title = bookInfo.title || '';
-              author = bookInfo.authors ? bookInfo.authors.join(', ') : '';
-              if (bookInfo.imageLinks && bookInfo.imageLinks.thumbnail) {
-                coverImage = bookInfo.imageLinks.thumbnail.replace('http:', 'https:');
-              }
-              found = true;
-            }
-          }
-
-          // אם גוגל לא מצא, בודקים את OpenLibrary
-          if (!found && openLibRes.status === 'fulfilled') {
-            const openLibData = await openLibRes.value.json();
-            const bookKey = `ISBN:${cleanIsbn}`;
-            if (openLibData[bookKey]) {
-              const bookInfo = openLibData[bookKey];
-              title = bookInfo.title || '';
-              author = bookInfo.authors ? bookInfo.authors.map(a => a.name).join(', ') : '';
-              coverImage = bookInfo.cover ? bookInfo.cover.large : '';
-              found = true;
-            }
-          }
-        } catch (e) {
-          console.error("External API search error:", e);
-        }
-      }
-
       // בדיקה אם המשתמש כבר העלה עותק של הספר הזה
       const alreadyOwned = books.some(b => (b.isbn && b.isbn === cleanIsbn) || (found && b.title === title));
       if (alreadyOwned) {
