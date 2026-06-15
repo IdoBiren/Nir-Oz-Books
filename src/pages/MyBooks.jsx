@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { BookPlus, Trash2, Send, Undo2, Edit2, Camera, Loader2, ScanBarcode } from 'lucide-react';
+import { BookPlus, Trash2, Send, Undo2, Edit2, Camera, Loader2, ScanBarcode, ImagePlus } from 'lucide-react';
 import { getUserBooks, addBook, deleteBook, editBook, lendBook, returnBook, getAllUsers, uploadBookCover, searchBookByIsbn } from '../services/db';
 import BarcodeScanner from '../components/BarcodeScanner';
 import { BOOK_GENRES } from '../utils/constants';
@@ -297,16 +297,30 @@ export default function MyBooks() {
                 <input 
                   type="file" 
                   accept="image/*" 
+                  capture="environment"
                   onChange={(e) => {
                     if (e.target.files[0]) setNewCoverFile(e.target.files[0]);
                   }}
                   style={{ display: 'none' }}
-                  id="new-cover-upload"
+                  id="new-cover-camera"
                 />
-                <label htmlFor="new-cover-upload" className="btn btn-secondary hover-lift" style={{ padding: '0.8rem 1rem', display: 'flex', gap: '0.5rem', cursor: 'pointer', flex: 1, margin: 0 }}>
-                  <Camera size={18} /> {newCoverFile ? newCoverFile.name : 'צלם או העלה תמונה מגלריה'}
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => {
+                    if (e.target.files[0]) setNewCoverFile(e.target.files[0]);
+                  }}
+                  style={{ display: 'none' }}
+                  id="new-cover-gallery"
+                />
+                <label htmlFor="new-cover-camera" className="btn btn-secondary hover-lift" style={{ display: 'flex', gap: '0.5rem', cursor: 'pointer', flex: 1, margin: 0, justifyContent: 'center' }}>
+                  <Camera size={18} /> צלם כריכה
+                </label>
+                <label htmlFor="new-cover-gallery" className="btn btn-secondary hover-lift" style={{ display: 'flex', gap: '0.5rem', cursor: 'pointer', flex: 1, margin: 0, justifyContent: 'center' }}>
+                  <ImagePlus size={18} /> העלה תמונה
                 </label>
               </div>
+              {newCoverFile && <div className="text-sm mt-2 text-center" style={{ color: 'var(--primary-color)' }}>נבחרה תמונה: {newCoverFile.name}</div>}
             </div>
             <div className="mt-4 flex justify-between">
               <button type="submit" className="btn btn-primary w-full" disabled={isUploading}>
@@ -418,16 +432,30 @@ export default function MyBooks() {
                   <input 
                     type="file" 
                     accept="image/*" 
+                    capture="environment"
                     onChange={(e) => {
                       if (e.target.files[0]) setEditCoverFile(e.target.files[0]);
                     }}
                     style={{ display: 'none' }}
-                    id="edit-cover-upload"
+                    id="edit-cover-camera"
                   />
-                  <label htmlFor="edit-cover-upload" className="btn btn-secondary hover-lift" style={{ padding: '0.8rem 1rem', display: 'flex', gap: '0.5rem', cursor: 'pointer', flex: 1, margin: 0 }}>
-                    <Camera size={18} /> {editCoverFile ? editCoverFile.name : 'החלף תמונה (צלם/העלה)'}
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={(e) => {
+                      if (e.target.files[0]) setEditCoverFile(e.target.files[0]);
+                    }}
+                    style={{ display: 'none' }}
+                    id="edit-cover-gallery"
+                  />
+                  <label htmlFor="edit-cover-camera" className="btn btn-secondary hover-lift" style={{ display: 'flex', gap: '0.5rem', cursor: 'pointer', flex: 1, margin: 0, justifyContent: 'center' }}>
+                    <Camera size={18} /> צלם כריכה
+                  </label>
+                  <label htmlFor="edit-cover-gallery" className="btn btn-secondary hover-lift" style={{ display: 'flex', gap: '0.5rem', cursor: 'pointer', flex: 1, margin: 0, justifyContent: 'center' }}>
+                    <ImagePlus size={18} /> העלה תמונה
                   </label>
                 </div>
+                {editCoverFile && <div className="text-sm mt-2 text-center" style={{ color: 'var(--primary-color)' }}>נבחרה תמונה: {editCoverFile.name}</div>}
               </div>
               <div className="flex gap-4 mt-6">
                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={isUploading}>
