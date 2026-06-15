@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { X, Loader2 } from 'lucide-react';
 
-export default function BarcodeScanner({ onScan, onClose }) {
+export default function BarcodeScanner({ onScan, onClose, onManualEntry }) {
   const [hasError, setHasError] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -68,6 +68,15 @@ export default function BarcodeScanner({ onScan, onClose }) {
           <div id="reader" style={{ width: '100%', borderRadius: '12px', overflow: 'hidden', minHeight: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
             <Loader2 className="animate-spin" color="white" />
           </div>
+        )}
+        
+        {onManualEntry && (
+          <button 
+            onClick={onManualEntry} 
+            className="btn btn-secondary w-full mt-4"
+          >
+            דלג והזן פרטים ידנית
+          </button>
         )}
       </div>
     </div>

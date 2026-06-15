@@ -43,8 +43,24 @@ export default function MyBooks() {
         setLoading(false);
       }
     }
-    loadData();
+    if (currentUser) {
+      loadData();
+    }
   }, [currentUser]);
+
+  const handleStartAddBook = () => {
+    if (showAddForm || showScanner) {
+      setShowAddForm(false);
+      setShowScanner(false);
+    } else {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        setShowScanner(true);
+      } else {
+        setShowAddForm(true);
+      }
+    }
+  };
 
   if (!currentUser) return <div className="text-center mt-8 glass-card"><h3>אנא התחברו כדי לצפות בספרים שלכם.</h3></div>;
 
@@ -112,6 +128,7 @@ export default function MyBooks() {
       } else {
         alert("הברקוד נקלט! אבל הספר עוד לא קיים במאגר. ברגע שתקליד אותו ידנית, תשמור אותו גם עבור הבאים אחריך! ✨");
       }
+      setShowAddForm(true);
     } catch (err) {
       console.error("Error fetching ISBN data:", err);
       alert("אירעה שגיאה בחיפוש הברקוד.");
@@ -240,14 +257,24 @@ export default function MyBooks() {
 
   return (
     <div className="animate-fade-in">
+      {showScanner && (
+        <BarcodeScanner 
+          onScan={handleBarcodeScan} 
+          onClose={() => setShowScanner(false)} 
+          onManualEntry={() => {
+            setShowScanner(false);
+            setShowAddForm(true);
+          }}
+        />
+      )}
       <div className="flex items-center justify-between mb-8 flex-mobile-col">
         <div>
           <h1 className="mb-2">הספרים שלי</h1>
           <p className="text-muted">ניהול הספרים שהעליתי לספרייה</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowAddForm(!showAddForm)}>
-          <BookPlus size={20} />
-          {showAddForm ? 'ביטול' : 'הוסף ספר חדש'}
+        <button className="btn btn-primary shadow hover-lift" onClick={handleStartAddBook}>
+          {showAddForm || showScanner ? <Undo2 size={20} /> : <BookPlus size={20} />}
+          {showAddForm || showScanner ? 'ביטול הוספה' : 'הוסף ספר למאגר'}
         </button>
       </div>
 
@@ -461,12 +488,6 @@ export default function MyBooks() {
         </div>
       )}
 
-      {showScanner && (
-        <BarcodeScanner 
-          onScan={handleBarcodeScan} 
-          onClose={() => setShowScanner(false)} 
-        />
-      )}
     </div>
   );
 }
