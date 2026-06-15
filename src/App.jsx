@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import MyBooks from './pages/MyBooks';
+import AdminDashboard from './pages/AdminDashboard';
 import OnboardingModal from './components/OnboardingModal';
 
 function AppContent() {
@@ -20,6 +21,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/my-books" element={<MyBooks />} />
+          <Route path="/admin" element={<AdminDashboard />} />
         </Routes>
       </div>
     </>

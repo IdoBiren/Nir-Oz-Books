@@ -16,7 +16,8 @@ const MOCK_USER = {
   displayName: 'אורח (Demo)',
   email: 'demo@community.library',
   photoURL: 'https://ui-avatars.com/api/?name=Guest&background=6366f1&color=fff',
-  phone: '050-0000000'
+  phone: '050-0000000',
+  isAdmin: true
 };
 
 export function AuthProvider({ children }) {
@@ -65,14 +66,18 @@ export function AuthProvider({ children }) {
           const profile = await getUserProfile(user.uid);
           
           if (profile && profile.phone) {
-             setUserProfile(profile);
+             setUserProfile({
+               ...profile,
+               isAdmin: user.email === 'idobi.renboim.ido@gmail.com'
+             });
           } else {
              // Profile is incomplete (missing phone). We set the userProfile without phone, which triggers the onboarding modal.
              setUserProfile({ 
                uid: user.uid, 
                displayName: user.displayName, 
                email: user.email, 
-               photoURL: user.photoURL 
+               photoURL: user.photoURL,
+               isAdmin: user.email === 'idobi.renboim.ido@gmail.com'
              });
           }
           await saveUserToDb(user); // ensures basic google data is saved if not exists
